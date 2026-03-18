@@ -70,17 +70,17 @@ ADD CONSTRAINT chk_bok_pris CHECK (Pris > 0);
 ALTER TABLE bok
 ADD CONSTRAINT chk_bok_lagersaldo CHECK (Lagersaldo >= 0);
 
--- Adderar CONSTRAINT i tabellen bok
+-- Adderar CONSTRAINT i tabellen orderrad
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE orderrad
 ADD CONSTRAINT chk_orderrad_antal CHECK (Antal > 0);
 
--- Adderar CONSTRAINT i tabellen bok
+-- Adderar CONSTRAINT i tabellen orderrad
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE orderrad
 ADD CONSTRAINT chk_orderrad_radpris CHECK (RadPris > 0);
 
--- Adderar CONSTRAINT i tabellen bok
+-- Adderar CONSTRAINT i tabellen bestallning
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE bestallning
 ADD CONSTRAINT chk_bestallning_totalbelopp CHECK (Totalbelopp >= 0);
