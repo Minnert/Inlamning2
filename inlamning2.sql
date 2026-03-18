@@ -1,183 +1,209 @@
--- MySQL dump 10.13  Distrib 8.0.44, for Win64 (x86_64)
---
--- Host: localhost    Database: bokhandel
--- ------------------------------------------------------
--- Server version	9.5.0
+-- SKAPA DATABAS
+DROP DATABASE IF EXISTS Bokhandel;
+CREATE DATABASE Bokhandel;
+USE Bokhandel;
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
-SET @@SESSION.SQL_LOG_BIN= 0;
+-- Skapar tabell Kund
+-- KundID används som primärnyckel för att varje kund ska kunna identifieras unikt
+CREATE TABLE kund (
+    KundID INT AUTO_INCREMENT PRIMARY KEY,
+    Namn VARCHAR(100) NOT NULL,
+    Epost VARCHAR(100) NOT NULL,
+    Telefon VARCHAR(30) NOT NULL,
+    Adress VARCHAR(200) NOT NULL
+);
 
---
--- GTID state at the beginning of the backup 
---
+-- Skapar tabell bok 
+-- Bok ID används som primärnyckel 
+-- ISBN är satt till UNIQUE eftersom varje bokutgåva ska ha ett unikt ISBN nummer
+CREATE TABLE bok (
+    BokID INT AUTO_INCREMENT PRIMARY KEY,
+    Titel VARCHAR(200) NOT NULL,
+    ISBN VARCHAR(20) NOT NULL UNIQUE,
+    Forfattare VARCHAR(100) NOT NULL,
+    Pris DECIMAL(10,2) NOT NULL,
+    Lagersaldo INT NOT NULL
+);
+-- Skapar tabell bestallning
+-- En kund kan ha många beställningar, därför kopplas kundID som FOREIGN KEY till kundtabellen
+CREATE TABLE bestallning (
+    BestallningsID INT AUTO_INCREMENT PRIMARY KEY,
+    KundID INT NOT NULL,
+    Datum TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Totalbelopp DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (KundID) REFERENCES kund(KundID)
+);
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '0c8141f4-bfa2-11f0-a25c-e073e728ed1d:1-15564';
+-- Skapar tabell orderrad
+-- En beställning kan innehålla flera böcker därför delas beställningar upp i orderrader.
+CREATE TABLE orderrad (
+    OrderradID INT AUTO_INCREMENT PRIMARY KEY,
+    BestallningsID INT NOT NULL,
+    BokID INT NOT NULL,
+    Antal INT NOT NULL,
+    RadPris DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (BestallningsID) REFERENCES bestallning(BestallningsID),
+    FOREIGN KEY (BokID) REFERENCES bok(BokID)
+);
 
---
--- Table structure for table `bestallning`
---
+-- Skapar tabell kundlogg
+-- Detta är en separat loggtabell för att visa spårbarhet
+-- och för att demonstrera användning av trigger.
+CREATE TABLE kundlogg (
+    LoggID INT AUTO_INCREMENT PRIMARY KEY,
+    KundID INT NOT NULL,
+    Namn VARCHAR(100) NOT NULL,
+    Registrerad DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
-DROP TABLE IF EXISTS `bestallning`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `bestallning` (
-  `BestallningsID` int NOT NULL AUTO_INCREMENT,
-  `KundID` int NOT NULL,
-  `Datum` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `Totalbelopp` decimal(10,2) NOT NULL,
-  PRIMARY KEY (`BestallningsID`),
-  KEY `KundID` (`KundID`),
-  CONSTRAINT `bestallning_ibfk_1` FOREIGN KEY (`KundID`) REFERENCES `kund` (`KundID`),
-  CONSTRAINT `chk_bestallning_totalbelopp` CHECK ((`Totalbelopp` >= 0))
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+-- Skapar Index på epost
+-- Detta förbättrar och effektiviserar sökningar på kundens e-post
+CREATE INDEX idx_kund_epost ON kund(Epost);
 
---
--- Dumping data for table `bestallning`
---
+-- Adderar CONSTRAINT i tabellen bok
+-- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
+ALTER TABLE bok
+ADD CONSTRAINT chk_bok_pris CHECK (Pris > 0);
+-- Adderar CONSTRAINT i tabellen bok
+-- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
+ALTER TABLE bok
+ADD CONSTRAINT chk_bok_lagersaldo CHECK (Lagersaldo >= 0);
+-- Adderar CONSTRAINT i tabellen bok
+-- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
+ALTER TABLE orderrad
+ADD CONSTRAINT chk_orderrad_antal CHECK (Antal > 0);
+-- Adderar CONSTRAINT i tabellen bok
+-- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
+ALTER TABLE orderrad
+ADD CONSTRAINT chk_orderrad_radpris CHECK (RadPris > 0);
+-- Adderar CONSTRAINT i tabellen bok
+-- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
+ALTER TABLE bestallning
+ADD CONSTRAINT chk_bestallning_totalbelopp CHECK (Totalbelopp >= 0);
 
-LOCK TABLES `bestallning` WRITE;
-/*!40000 ALTER TABLE `bestallning` DISABLE KEYS */;
-INSERT INTO `bestallning` VALUES (1,1,'2026-03-18 19:59:15',264.00),(2,1,'2026-03-18 19:59:15',119.00),(3,1,'2026-03-18 19:59:15',139.00),(4,2,'2026-03-18 19:59:15',367.00),(5,4,'2026-03-18 19:59:15',129.00);
-/*!40000 ALTER TABLE `bestallning` ENABLE KEYS */;
-UNLOCK TABLES;
+-- Skapar trigger
+-- Trigger används för att minska lagersaldo när en orderrad läggs till
+-- samt logga när en ny kund registreras
+DELIMITER //
 
---
--- Table structure for table `bok`
---
+CREATE TRIGGER trg_minska_lagersaldo
+AFTER INSERT ON orderrad
+FOR EACH ROW
+BEGIN
+    UPDATE bok
+    SET Lagersaldo = Lagersaldo - NEW.Antal
+    WHERE BokID = NEW.BokID;
+END //
 
-DROP TABLE IF EXISTS `bok`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `bok` (
-  `BokID` int NOT NULL AUTO_INCREMENT,
-  `Titel` varchar(200) NOT NULL,
-  `ISBN` varchar(20) NOT NULL,
-  `Forfattare` varchar(100) NOT NULL,
-  `Pris` decimal(10,2) NOT NULL,
-  `Lagersaldo` int NOT NULL,
-  PRIMARY KEY (`BokID`),
-  UNIQUE KEY `ISBN` (`ISBN`),
-  CONSTRAINT `chk_bok_lagersaldo` CHECK ((`Lagersaldo` >= 0)),
-  CONSTRAINT `chk_bok_pris` CHECK ((`Pris` > 0))
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+-- Loggar när en ny kund skapas.
+CREATE TRIGGER trg_logga_ny_kund
+AFTER INSERT ON kund
+FOR EACH ROW
+BEGIN
+    INSERT INTO kundlogg (KundID, Namn)
+    VALUES (NEW.KundID, NEW.Namn);
+END //
 
---
--- Dumping data for table `bok`
---
+DELIMITER ;
 
-LOCK TABLES `bok` WRITE;
-/*!40000 ALTER TABLE `bok` DISABLE KEYS */;
-INSERT INTO `bok` VALUES (1,'Sagan om ringen: Ringens brodraskap','9789100123451','J.R.R. Tolkien',129.00,18),(2,'Sagan om ringen: De tva tornen','9789100123452','J.R.R. Tolkien',135.00,17),(3,'Sagan om ringen: Konungens aterkomst','9789100123453','J.R.R. Tolkien',139.00,13),(4,'Bilbo - En hobbits aventyr','9789100123450','J.R.R. Tolkien',119.00,22);
-/*!40000 ALTER TABLE `bok` ENABLE KEYS */;
-UNLOCK TABLES;
+-- TESTDATA
+INSERT INTO kund (Namn, Epost, Telefon, Adress) VALUES
+('Frodo Bagger', 'frodo@shire.me', '070-111 11 11', 'Baggershus, Fylke'),
+('Sam Gamgi', 'sam@shire.me', '070-222 22 22', 'Gamgis gård, Fylke'),
+('Gandalf Grå', 'gandalf@valinor.ma', '070-333 33 33', 'Vandraren utan adress'),
+('Aragorn Elessar', 'aragorn@gondor.nu', '070-444 44 44', 'Minas Tirith, Gondor'),
+('Legolas Grönblad', 'legolas@skogarna.se', '070-555 55 55', 'Mörkaskogen, Midgård');
 
---
--- Table structure for table `kund`
---
+INSERT INTO bok (Titel, ISBN, Forfattare, Pris, Lagersaldo) VALUES
+('Sagan om ringen: Ringens brodraskap', '9789100123451', 'J.R.R. Tolkien', 129.00, 20),
+('Sagan om ringen: De tva tornen', '9789100123452', 'J.R.R. Tolkien', 135.00, 18),
+('Sagan om ringen: Konungens aterkomst', '9789100123453', 'J.R.R. Tolkien', 139.00, 15),
+('Bilbo - En hobbits aventyr', '9789100123450', 'J.R.R. Tolkien', 119.00, 25);
 
-DROP TABLE IF EXISTS `kund`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `kund` (
-  `KundID` int NOT NULL AUTO_INCREMENT,
-  `Namn` varchar(100) NOT NULL,
-  `Epost` varchar(100) NOT NULL,
-  `Telefon` varchar(30) NOT NULL,
-  `Adress` varchar(200) NOT NULL,
-  PRIMARY KEY (`KundID`),
-  KEY `idx_kund_epost` (`Epost`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+INSERT INTO bestallning (KundID, Totalbelopp) VALUES
+(1, 264.00),
+(1, 119.00),
+(1, 139.00),
+(2, 367.00),
+(4, 129.00);
 
---
--- Dumping data for table `kund`
---
+INSERT INTO orderrad (BestallningsID, BokID, Antal, RadPris) VALUES
+(1, 1, 1, 129.00),
+(1, 2, 1, 135.00),
+(2, 4, 1, 119.00),
+(3, 3, 1, 139.00),
+(4, 4, 2, 238.00),
+(4, 3, 1, 129.00),
+(5, 1, 1, 129.00);
 
-LOCK TABLES `kund` WRITE;
-/*!40000 ALTER TABLE `kund` DISABLE KEYS */;
-INSERT INTO `kund` VALUES (1,'Frodo Bagger','frodo.bagger@shire.me','070-111 11 11','Baggershus, Fylke'),(2,'Sam Gamgi','sam@shire.me','070-222 22 22','Gamgis gård, Fylke'),(3,'Gandalf Grå','gandalf@valinor.ma','070-333 33 33','Vandraren utan adress'),(4,'Aragorn Elessar','aragorn@gondor.nu','070-444 44 44','Minas Tirith, Gondor'),(5,'Legolas Grönblad','legolas@skogarna.se','070-555 55 55','Mörkaskogen, Midgård');
-/*!40000 ALTER TABLE `kund` ENABLE KEYS */;
-UNLOCK TABLES;
+-- HÄMTA, FILTRERA, SORTERA
+SELECT * FROM kund;
 
---
--- Table structure for table `kundlogg`
---
+SELECT * FROM bestallning;
 
-DROP TABLE IF EXISTS `kundlogg`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `kundlogg` (
-  `LoggID` int NOT NULL AUTO_INCREMENT,
-  `KundID` int NOT NULL,
-  `Namn` varchar(100) NOT NULL,
-  `Registrerad` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`LoggID`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+SELECT * FROM kund
+WHERE Namn LIKE 'F%';
 
---
--- Dumping data for table `kundlogg`
---
+SELECT * FROM kund
+WHERE Epost LIKE '%shire.me';
 
-LOCK TABLES `kundlogg` WRITE;
-/*!40000 ALTER TABLE `kundlogg` DISABLE KEYS */;
-INSERT INTO `kundlogg` VALUES (1,1,'Frodo Bagger','2026-03-18 20:59:15'),(2,2,'Sam Gamgi','2026-03-18 20:59:15'),(3,3,'Gandalf Grå','2026-03-18 20:59:15'),(4,4,'Aragorn Elessar','2026-03-18 20:59:15'),(5,5,'Legolas Grönblad','2026-03-18 20:59:15');
-/*!40000 ALTER TABLE `kundlogg` ENABLE KEYS */;
-UNLOCK TABLES;
+SELECT Titel, Pris
+FROM bok
+ORDER BY Pris DESC;
 
---
--- Table structure for table `orderrad`
---
+-- UPDATE, DELETE, TRANSAKTION
+-- Visar hur data kan uppdateras och hur transaktioner används
+-- för att kunna ångra ändringar om något blir fel
+UPDATE kund
+SET Epost = 'frodo.bagger@shire.me'
+WHERE KundID = 1;
 
-DROP TABLE IF EXISTS `orderrad`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `orderrad` (
-  `OrderradID` int NOT NULL AUTO_INCREMENT,
-  `BestallningsID` int NOT NULL,
-  `BokID` int NOT NULL,
-  `Antal` int NOT NULL,
-  `RadPris` decimal(10,2) NOT NULL,
-  PRIMARY KEY (`OrderradID`),
-  KEY `BestallningsID` (`BestallningsID`),
-  KEY `BokID` (`BokID`),
-  CONSTRAINT `orderrad_ibfk_1` FOREIGN KEY (`BestallningsID`) REFERENCES `bestallning` (`BestallningsID`),
-  CONSTRAINT `orderrad_ibfk_2` FOREIGN KEY (`BokID`) REFERENCES `bok` (`BokID`),
-  CONSTRAINT `chk_orderrad_antal` CHECK ((`Antal` > 0)),
-  CONSTRAINT `chk_orderrad_radpris` CHECK ((`RadPris` > 0))
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+SELECT * FROM kund
+WHERE KundID = 1;
 
---
--- Dumping data for table `orderrad`
---
+START TRANSACTION;
 
-LOCK TABLES `orderrad` WRITE;
-/*!40000 ALTER TABLE `orderrad` DISABLE KEYS */;
-INSERT INTO `orderrad` VALUES (1,1,1,1,129.00),(2,1,2,1,135.00),(3,2,4,1,119.00),(4,3,3,1,139.00),(5,4,4,2,238.00),(6,4,3,1,129.00),(7,5,1,1,129.00);
-/*!40000 ALTER TABLE `orderrad` ENABLE KEYS */;
-UNLOCK TABLES;
-SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+DELETE FROM kund
+WHERE KundID = 5;
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+SELECT * FROM kund;
 
--- Dump completed on 2026-03-18 21:03:22
+ROLLBACK;
+
+SELECT * FROM kund
+WHERE KundID = 5;
+
+-- JOINS
+-- Joins används för att kombinera information från flera tabeller
+-- INNER JOIN visar endast kunder som har beställningar
+SELECT k.KundID, k.Namn, b.BestallningsID, b.Datum, b.Totalbelopp
+FROM kund k
+INNER JOIN bestallning b ON k.KundID = b.KundID;
+
+-- LEFT JOIN visar alla kunder, även de som inte gjort beställningar
+SELECT k.KundID, k.Namn, b.BestallningsID, b.Totalbelopp
+FROM kund k
+LEFT JOIN bestallning b ON k.KundID = b.KundID;
+
+-- GROUP BY OCH HAVING
+-- Räknar antal beställningar per kund
+SELECT k.KundID, k.Namn, COUNT(b.BestallningsID) AS AntalBestallningar
+FROM kund k
+LEFT JOIN bestallning b ON k.KundID = b.KundID
+GROUP BY k.KundID, k.Namn;
+
+-- Visar endast kunder som gjort fler än 2 beställningar
+SELECT k.KundID, k.Namn, COUNT(b.BestallningsID) AS AntalBestallningar
+FROM kund k
+LEFT JOIN bestallning b ON k.KundID = b.KundID
+GROUP BY k.KundID, k.Namn
+HAVING COUNT(b.BestallningsID) > 2;
+
+-- KONTROLL AV TRIGGERS
+-- Dessa SELECT-satser används för att kontrollera att 
+-- triggers har fungerat som tänkt:
+-- bok visar om Lagersaldo minskat
+-- Kundlogg visar om nya kunder Loggats
+SELECT * FROM bok;
+SELECT * FROM kundlogg;
+SELECT * from kund 
