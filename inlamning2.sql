@@ -64,18 +64,22 @@ CREATE INDEX idx_kund_epost ON kund(Epost);
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE bok
 ADD CONSTRAINT chk_bok_pris CHECK (Pris > 0);
+
 -- Adderar CONSTRAINT i tabellen bok
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE bok
 ADD CONSTRAINT chk_bok_lagersaldo CHECK (Lagersaldo >= 0);
+
 -- Adderar CONSTRAINT i tabellen bok
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE orderrad
 ADD CONSTRAINT chk_orderrad_antal CHECK (Antal > 0);
+
 -- Adderar CONSTRAINT i tabellen bok
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE orderrad
 ADD CONSTRAINT chk_orderrad_radpris CHECK (RadPris > 0);
+
 -- Adderar CONSTRAINT i tabellen bok
 -- Detta säkerställer datakvaliteten i databasen så att orimliga värden inte sparas
 ALTER TABLE bestallning
