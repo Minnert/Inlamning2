@@ -50,4 +50,4 @@ Orderrad fungerar som en kopplingstabell som löser en många-till-många-relati
 Projektet innehåller även exempel på SELECT, JOIN, GROUP BY och transaktioner (ROLLBACK) för att visa praktisk användning.
 </p>
 
-![ER-diagram](images/erdiagram.png)
+
